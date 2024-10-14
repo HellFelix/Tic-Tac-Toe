@@ -1,37 +1,34 @@
 use std::{
     f32::{INFINITY, NEG_INFINITY},
     fmt::Display,
-    io,
     ops::{Add, Sub},
 };
 
-fn main() {}
-
-fn play_engine(side: Side) {
-    let mut game = Game::init();
-    loop {
-        if game.board.side_to_move == side {
-            let mut buffer = String::new();
-            let stdin = io::stdin();
-            stdin.read_line(&mut buffer).unwrap();
-            game.manual_move(buffer[0..1].parse::<u8>().unwrap());
-        } else {
-            game.engine_move();
-        }
-        println!("{}", game.board);
-        if game.board.is_winning(Side::X) {
-            println!("Game over, X has won!");
-            break;
-        } else if game.board.is_winning(Side::O) {
-            println!("Game over, O has won!");
-            break;
-        }
-        if game.board.get_empty().0 == 0 {
-            println!("Game over, result is draw!");
-            break;
-        }
-    }
-}
+// fn play_engine(side: Side) {
+//     let mut game = Game::init();
+//     loop {
+//         if game.board.side_to_move == side {
+//             let mut buffer = String::new();
+//             let stdin = io::stdin();
+//             stdin.read_line(&mut buffer).unwrap();
+//             game.manual_move(buffer[0..1].parse::<u8>().unwrap());
+//         } else {
+//             game.engine_move();
+//         }
+//         println!("{}", game.board);
+//         if game.board.is_winning(Side::X) {
+//             println!("Game over, X has won!");
+//             break;
+//         } else if game.board.is_winning(Side::O) {
+//             println!("Game over, O has won!");
+//             break;
+//         }
+//         if game.board.get_empty().0 == 0 {
+//             println!("Game over, result is draw!");
+//             break;
+//         }
+//     }
+// }
 
 const WINNING_STATES: [u16; 8] = [
     448, // 111000000
@@ -46,7 +43,7 @@ const WINNING_STATES: [u16; 8] = [
 const FULLBAORD: BitBoard = BitBoard(511); // 111111111
 
 #[derive(Clone, Copy, PartialEq)]
-enum Side {
+pub enum Side {
     X,
     O,
 }
@@ -78,6 +75,42 @@ impl Game {
     }
     pub fn manual_move(&mut self, square: u8) {
         self.board.make_move(square);
+    }
+    pub fn get_state(&self) -> [u8; 11] {
+        let mut res = [0; 11];
+        for i in 0..3 {
+            for j in 0..3 {
+                let n = 3 * i + j;
+                if self.board.x_side.0 & (1 << n) != 0 {
+                    res[n] = 1;
+                } else if self.board.o_side.0 & (1 << n) != 0 {
+                    res[n] = 2;
+                }
+            }
+        }
+
+        // Game state
+        let mut res_state = 0;
+        if self.board.is_winning(Side::X) {
+            res_state = 1;
+        } else if self.board.is_winning(Side::O) {
+            res_state = 2;
+        } else if self.board.get_empty().0 == 0 {
+            res_state = 3;
+        }
+        res[9] = res_state;
+
+        // Side to move
+        res[10] = if self.board.side_to_move == Side::X {
+            1
+        } else {
+            2
+        };
+
+        res
+    }
+    pub fn show(&self) {
+        println!("{}", self.board);
     }
 }
 
